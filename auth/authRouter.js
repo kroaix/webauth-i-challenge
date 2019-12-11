@@ -1,7 +1,5 @@
 const router = require("express").Router();
-
 const bcrypt = require("bcryptjs");
-
 const Users = require("../users/usersModel.js");
 
 router.post("/register", async (req, res) => {
@@ -18,16 +16,32 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   let { username, password } = req.body;
+  req.session.loggedin = false;
   try {
     const user = await Users.findBy({ username })
     .first()
     if (user && bcrypt.compareSync(password, user.password)) {
+      req.session.loggedin = true;
       res.json({ message: `Welcome ${user.username}` });
     } else {
       res.status(401).json({ message: "Invalid Credentials" });
     }
   } catch {
     res.status(500).json({ message: "You shall not pass!" });
+  }
+});
+
+router.delete('/logout', (req, res) => {
+  if (req.session) {
+    req.session.destroy((err) => {
+      if (err) {
+        res.status(400).send('Unable to log out.')
+      } else {
+        res.send('Successfully logged out.')
+      }
+    });
+  } else {
+    res.end();
   }
 });
 
